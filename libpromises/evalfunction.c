@@ -1586,6 +1586,32 @@ static FnCallResult FnCallGetMetaTags(EvalContext *ctx, ARG_UNUSED const Policy 
         tagset = EvalContextClassTags(ctx, ref.ns, ref.name);
         ClassRefDestroy(ref);
     }
+    else if (strcmp(fp->name, "getbundlemetatags") == 0)    
+    {
+        const Bundle *bp = PromiseGetBundle(fp->caller);
+        const size_t sections = SeqLength(bp->sections);
+
+        for (size_t i = 0; i < sections; i++)
+        {
+            BundleSection *section = SeqAt(bp->sections, i);
+
+            if (strcmp(section->promise_type, "meta") == 0 )
+            {
+                const size_t promises = SeqLength(section->promises);
+                for (size_t i = 0; i < promises; i++)
+                {
+                    Promise *promise = SeqAt(section->promises, i);
+                    if (strcmp(promise->promiser, "tags") == 0) {
+                        Rval promisee = promise->promisee;
+                        char promiseeType = promisee.type;
+                        printf("%s\n", promiseeType);
+                        break;
+                    }
+                }
+            }
+        }
+
+    }
     else
     {
         FatalError(ctx, "FnCallGetMetaTags: got unknown function name '%s', aborting", fp->name);
@@ -10482,6 +10508,8 @@ const FnCallType CF_FNCALL_TYPES[] =
     FnCallTypeNew("getvalues", CF_DATA_TYPE_STRING_LIST, GETINDICES_ARGS, &FnCallGetValues, "Get a list of values in the list or array or data container arg1",
                   FNCALL_OPTION_COLLECTING, FNCALL_CATEGORY_DATA, SYNTAX_STATUS_NORMAL),
     FnCallTypeNew("getvariablemetatags", CF_DATA_TYPE_STRING_LIST, GETVARIABLEMETATAGS_ARGS, &FnCallGetMetaTags, "Collect the variable arg1's meta tags into an slist, optionally collecting only tag key arg2",
+                  FNCALL_OPTION_VARARG, FNCALL_CATEGORY_UTILS, SYNTAX_STATUS_NORMAL),
+    FnCallTypeNew("getbundlemetatags", CF_DATA_TYPE_STRING_LIST, GETVARIABLEMETATAGS_ARGS, &FnCallGetMetaTags, "Collect the bundle arg1's meta tags into an slist, optionally collecting only tag key arg2",
                   FNCALL_OPTION_VARARG, FNCALL_CATEGORY_UTILS, SYNTAX_STATUS_NORMAL),
     FnCallTypeNew("grep", CF_DATA_TYPE_STRING_LIST, GREP_ARGS, &FnCallGrep, "Extract the sub-list if items matching the regular expression in arg1 of the list or array or data container arg2",
                   FNCALL_OPTION_COLLECTING, FNCALL_CATEGORY_DATA, SYNTAX_STATUS_NORMAL),
