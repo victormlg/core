@@ -25,13 +25,16 @@
 #include <reactor_context.h>
 #include <prototypes3.h>        /* ReactorNova*() */
 #include <signals.h>            /* GetSignalPipe() */
+#include <watcher.h>
+#include <file_watcher.h>
 #include <alloc.h>
 
 bool ReactorContextInitialize(ReactorContext *ctx)
 {
     assert(ctx != NULL);
 
-    // TODO: initialize watcher registry
+    WatcherRegistryInitialize();
+    // TODO: Register watchers with `WatcherRegister()`
 
     size_t max_nova_fds = ReactorNovaMaxFds();
     ctx->all_fds_capacity = max_nova_fds + 1;
@@ -48,7 +51,14 @@ bool ReactorContextInitialize(ReactorContext *ctx)
     ctx->num_nova_fds = num_nova_fds;
     ctx->num_fds = num_nova_fds;
 
-    // TODO: intialize event watcher
+    if (!EventWatcherInitialize(ctx->all_fds, ctx->all_fds_capacity, &ctx->num_fds))
+    {
+        ReactorNovaFinalize();
+        WatcherRegistryFinalize();
+        free(ctx->all_fds);
+        ctx->all_fds = NULL;
+        return false;
+    }
 
     return true;
 }
@@ -106,14 +116,14 @@ void ReactorContextHandleEvents(ReactorContext *ctx, time_t *next_tick)
         while (recv(GetSignalPipe(), &buf, 1, 0) > 0) { /* drain */ }
     }
 
-    // TODO: handle watcher events
+    EventWatcherHandleEvents(&ctx->readfds);
 }
 
 void ReactorContextFinalize(ReactorContext *ctx)
 {
     assert(ctx != NULL);
 
-    // TODO: finalize watcher events
+    EventWatcherFinalize();
     ReactorNovaFinalize();
     free(ctx->all_fds);
     ctx->all_fds = NULL;
