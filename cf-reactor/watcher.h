@@ -22,40 +22,34 @@
   included file COSL.txt.
 */
 
-#ifndef CFENGINE_REACTOR_CONTEXT_H
-#define CFENGINE_REACTOR_CONTEXT_H
+#ifndef CFENGINE_WATCHER_H
+#define CFENGINE_WATCHER_H
 
-#include <platform.h>
-#include <sequence.h>
+#include <cf3.defs.h>   /* Bundle */
 
 typedef enum
 {
-  REACTOR_FD_NOVA,
-  REACTOR_FD_WATCHER
-} ReactorFdType;
+  EVENT_FILE_DELETED,
+} EventType;
+
+typedef bool (*WatcherCheckFn)(void *state);
+typedef void (*WatcherStateDestroyFn)(void *state);
+
+void WatcherRegistryInitialize(void);
+void WatcherRegistryFinalize(void);
 
 /**
- * @brief Single file descriptor watched by daemon's select(2) loop as well as metadata of its origin
+ * @brief Register a specific watcher instance.
+ * 
+ * @param key the events promise identifier
+ * @param type the type of watcher, defined in when bodies
+ * @param state the data used for by the watcher, depending on the type
+ * @param bundle the bundle to run on event
+ * @param interval interval between runs
  */
-typedef struct
-{
-  ReactorFdType type;
-  int fd;
-} ReactorFd;
-
-/**
- * @brief Shared state for the cf-reactor daemon's single select(2) loop. fds is an array of ReactorFd
- */
-typedef struct
-{
-  Seq *fds;
-  fd_set readfds;
-  size_t max_nova_fds;
-} ReactorContext;
-
-bool ReactorContextInitialize(ReactorContext *ctx);
-int ReactorContextSetupFileDescriptors(ReactorContext *ctx);
-void ReactorContextHandleEvents(ReactorContext *ctx, time_t *next_tick);
-void ReactorContextFinalize(ReactorContext *ctx);
+void WatcherRegister(const char *key, EventType type, void *state, Bundle *bundle, time_t interval);
+bool EventWatcherInitialize(int *fd);
+void EventWatcherHandleEvents(int fd, fd_set *readfds);
+void EventWatcherFinalize(void);
 
 #endif

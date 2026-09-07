@@ -22,40 +22,28 @@
   included file COSL.txt.
 */
 
-#ifndef CFENGINE_REACTOR_CONTEXT_H
-#define CFENGINE_REACTOR_CONTEXT_H
+#ifndef CFENGINE_WAKEUP_CHANNEL_H
+#define CFENGINE_WAKEUP_CHANNEL_H
 
 #include <platform.h>
-#include <sequence.h>
-
-typedef enum
-{
-  REACTOR_FD_NOVA,
-  REACTOR_FD_WATCHER
-} ReactorFdType;
 
 /**
- * @brief Single file descriptor watched by daemon's select(2) loop as well as metadata of its origin
+ * @brief A cross-platform self-pipe: lets a background thread wake up the
+ * daemon's select(2) loop on demand.
+ *
+ * Any current or future background event source (the watcher subsystem
+ * today, potentially others later) that needs to interrupt select() should
+ * own one of these rather than inventing its own pipe/socketpair handling.
  */
 typedef struct
 {
-  ReactorFdType type;
-  int fd;
-} ReactorFd;
+    int fds[2]; /* [0] = read end, add to the select() fd_set; [1] = write end */
+} WakeupChannel;
 
-/**
- * @brief Shared state for the cf-reactor daemon's single select(2) loop. fds is an array of ReactorFd
- */
-typedef struct
-{
-  Seq *fds;
-  fd_set readfds;
-  size_t max_nova_fds;
-} ReactorContext;
+bool WakeupChannelOpen(WakeupChannel *channel);
+int WakeupChannelReadFd(const WakeupChannel *channel);
+void WakeupChannelNotify(const WakeupChannel *channel);
+void WakeupChannelDrain(const WakeupChannel *channel);
+void WakeupChannelClose(WakeupChannel *channel);
 
-bool ReactorContextInitialize(ReactorContext *ctx);
-int ReactorContextSetupFileDescriptors(ReactorContext *ctx);
-void ReactorContextHandleEvents(ReactorContext *ctx, time_t *next_tick);
-void ReactorContextFinalize(ReactorContext *ctx);
-
-#endif
+#endif /* CFENGINE_WAKEUP_CHANNEL_H */
