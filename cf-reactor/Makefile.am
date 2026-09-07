@@ -41,7 +41,8 @@ libcf_reactor_la_SOURCES = \
 	cf-reactor.c cf-reactor.h \
 	reactor_context.c reactor_context.h \
 	watcher.c watcher.h \
-	wakeup_channel.c wakeup_channel.h
+	wakeup_channel.c wakeup_channel.h \
+	file_watcher.c file_watcher.h
 
 if !BUILTIN_EXTENSIONS
  bin_PROGRAMS = cf-reactor

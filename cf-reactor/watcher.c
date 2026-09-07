@@ -33,6 +33,7 @@
 #include <sequence.h>
 #include <threaded_queue.h>
 #include <pthread.h>
+#include <file_watcher.h>
 
 /* Upper bound on how long the watcher thread ever sleeps in one go, so that
  * IsPendingTermination() is re-checked at least this often during shutdown,
@@ -95,7 +96,10 @@ void WatcherRegister(const char *key, EventType type, void *payload, Bundle *bun
     WatcherPayloadDestroyFn destroy_payload;
     switch (type)
     {
-
+    case EVENT_FILE_DELETED:
+        check_fn = CheckFileExists;
+        destroy_payload = DestroyFileWatcherPayload;
+        break;
     // TODO: add more cases
 
     default:
